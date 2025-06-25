@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Hardware (CPU & GPU)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fetch-spinner, .trends-spinner { display: none; }
+        .tab-btn.active { background-color: #4f46e5; color: white; }
+        .tab-btn { transition: all 0.3s ease; }
+        .trends-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Analisador de Hardware</h1>
+            <p class="text-lg text-gray-400">Compare o custo-benefício de CPUs e GPUs com dados de mercado.</p>
+             <p id="auth-info" class="text-center text-xs text-gray-500 mt-2"></p>
+        </header>
+
+        <!-- Abas de Navegação -->
+        <div class="mb-8 flex justify-center border-b border-gray-700">
+            <button id="cpu-tab-btn" class="tab-btn active text-lg font-semibold py-3 px-6 text-gray-300 border-b-2 border-transparent hover:border-indigo-500 hover:text-white" data-tab="cpu">
+                <i class="fas fa-microchip mr-2"></i>Analisador de CPU
+            </button>
+            <button id="gpu-tab-btn" class="tab-btn text-lg font-semibold py-3 px-6 text-gray-300 border-b-2 border-transparent hover:border-indigo-500 hover:text-white" data-tab="gpu">
+                <i class="fas fa-gamepad mr-2"></i>Analisador de GPU
+            </button>
+        </div>
+
+        <!-- Conteúdo da Aba de CPU -->
+        <div id="cpu-analyzer" class="tab-content">
+            <!-- Tendências da Semana -->
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto">
+                <h3 class="text-xl font-semibold text-white mb-4">Tendências de CPUs da Semana</h3>
+                <button id="cpu-trends-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-chart-line"></i> Buscar Top 10 CPUs Populares
+                </button>
+                <i id="cpu-trends-spinner" class="fas fa-spinner fa-spin text-white trends-spinner mx-auto my-4 text-2xl"></i>
+                <ol id="cpu-trends-list" class="list-decimal list-inside mt-4 text-gray-300 trends-list"></ol>
+                <p id="cpu-trends-error" class="text-red-400 text-sm mt-4 hidden"></p>
+            </div>
+            
+            <div id="cpu-form-section" class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto">
+                <h2 class="text-2xl font-semibold mb-4 text-white">Adicionar/Editar CPU</h2>
+                <form id="cpu-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <input type="hidden" id="cpu-id">
+                    <div class="md:col-span-2">
+                        <label for="cpu-name" class="block text-sm font-medium text-gray-300 mb-1">Nome do CPU</label>
+                        <div class="flex items-center gap-2">
+                             <input type="text" id="cpu-name" placeholder="Ex: Ryzen 5 5600" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                             <button type="button" id="fetch-cpu-data-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap">
+                                <i class="fas fa-robot"></i> Buscar Dados
+                            </button>
+                            <i id="cpu-fetch-spinner" class="fas fa-spinner fa-spin text-white fetch-spinner"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="cpu-socket" class="block text-sm font-medium text-gray-300 mb-1">Soquete</label>
+                        <input type="text" id="cpu-socket" placeholder="Automático" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="cpu-performance" class="block text-sm font-medium text-gray-300 mb-1">Performance (PassMark)</label>
+                        <input type="number" id="cpu-performance" placeholder="Automático" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="cpu-price" class="block text-sm font-medium text-gray-300 mb-1">Preço (R$)</label>
+                        <input type="number" step="0.01" id="cpu-price" placeholder="Ex: 790.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="col-span-1 md:col-span-2 flex justify-end gap-4 mt-4">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
+                        <button type="button" id="cpu-cancel-button" class="hidden bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button>
+                    </div>
+                </form>
+                 <p id="cpu-gemini-error" class="text-red-400 text-sm mt-4 hidden"></p>
+            </div>
+            <!-- Tabela e Controles -->
+             <div class="max-w-7xl mx-auto">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <div>
+                        <label for="cpu-base-select" class="text-sm font-medium text-gray-300 mr-2">CPU Base:</label>
+                        <select id="cpu-base-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm"></select>
+                    </div>
+                    <div>
+                        <label for="cpu-sort-by" class="text-sm font-medium text-gray-300 mr-2">Ordenar por:</label>
+                        <select id="cpu-sort-by" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm">
+                            <option value="cost_benefit_desc">Custo-Benefício (Melhor para Pior)</option>
+                            <option value="price_asc">Preço (Menor para Maior)</option>
+                            <option value="perf_desc">Performance (Maior para Menor)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <p id="cpu-loading" class="text-center text-gray-400 mt-8">Carregando CPUs... <i class="fas fa-spinner fa-spin"></i></p>
+                    <table id="cpu-table" class="min-w-full bg-gray-800 rounded-2xl shadow-lg hidden">
+                        <thead class="bg-gray-700/50">
+                            <tr>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-300 rounded-tl-2xl">CPU</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Soquete</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Preço</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Performance (%)</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Diferença Preço (%)</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Custo x Benefício</th><th class="p-4 text-center text-sm font-semibold text-gray-300 rounded-tr-2xl">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cpu-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conteúdo da Aba de GPU -->
+        <div id="gpu-analyzer" class="tab-content hidden">
+            <!-- Tendências da Semana -->
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto">
+                <h3 class="text-xl font-semibold text-white mb-4">Tendências de GPUs da Semana</h3>
+                <button id="gpu-trends-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-chart-line"></i> Buscar Top 10 GPUs Populares
+                </button>
+                <i id="gpu-trends-spinner" class="fas fa-spinner fa-spin text-white trends-spinner mx-auto my-4 text-2xl"></i>
+                <ol id="gpu-trends-list" class="list-decimal list-inside mt-4 text-gray-300 trends-list"></ol>
+                <p id="gpu-trends-error" class="text-red-400 text-sm mt-4 hidden"></p>
+            </div>
+            
+            <div id="gpu-form-section" class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8 max-w-4xl mx-auto">
+                <h2 class="text-2xl font-semibold mb-4 text-white">Adicionar/Editar GPU</h2>
+                <form id="gpu-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <input type="hidden" id="gpu-id">
+                    <div class="md:col-span-2">
+                        <label for="gpu-name" class="block text-sm font-medium text-gray-300 mb-1">Nome da GPU</label>
+                        <div class="flex items-center gap-2">
+                             <input type="text" id="gpu-name" placeholder="Ex: GeForce RTX 3060" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                             <button type="button" id="fetch-gpu-data-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap">
+                                <i class="fas fa-robot"></i> Buscar Dados
+                            </button>
+                            <i id="gpu-fetch-spinner" class="fas fa-spinner fa-spin text-white fetch-spinner"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="gpu-performance" class="block text-sm font-medium text-gray-300 mb-1">Performance (G3D Mark)</label>
+                        <input type="number" id="gpu-performance" placeholder="Automático" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="gpu-price" class="block text-sm font-medium text-gray-300 mb-1">Preço (R$)</label>
+                        <input type="number" step="0.01" id="gpu-price" placeholder="Ex: 1800.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="col-span-1 md:col-span-2 flex justify-end gap-4 mt-4">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
+                        <button type="button" id="gpu-cancel-button" class="hidden bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button>
+                    </div>
+                </form>
+                <p id="gpu-gemini-error" class="text-red-400 text-sm mt-4 hidden"></p>
+            </div>
+            <!-- Tabela e Controles -->
+             <div class="max-w-7xl mx-auto">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <div>
+                        <label for="gpu-base-select" class="text-sm font-medium text-gray-300 mr-2">GPU Base:</label>
+                        <select id="gpu-base-select" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm"></select>
+                    </div>
+                    <div>
+                        <label for="gpu-sort-by" class="text-sm font-medium text-gray-300 mr-2">Ordenar por:</label>
+                        <select id="gpu-sort-by" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm">
+                            <option value="cost_benefit_desc">Custo-Benefício (Melhor para Pior)</option>
+                            <option value="price_asc">Preço (Menor para Maior)</option>
+                            <option value="perf_desc">Performance (Maior para Menor)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <p id="gpu-loading" class="text-center text-gray-400 mt-8">Carregando GPUs... <i class="fas fa-spinner fa-spin"></i></p>
+                    <table id="gpu-table" class="min-w-full bg-gray-800 rounded-2xl shadow-lg hidden">
+                        <thead class="bg-gray-700/50">
+                            <tr>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-300 rounded-tl-2xl">GPU</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Preço</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Performance (%)</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Diferença Preço (%)</th><th class="p-4 text-left text-sm font-semibold text-gray-300">Custo x Benefício</th><th class="p-4 text-center text-sm font-semibold text-gray-300 rounded-tr-2xl">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gpu-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div class="bg-gray-800 rounded-lg p-6 shadow-xl text-center"><p id="delete-modal-text" class="text-lg text-white mb-4"></p><div class="flex justify-center gap-4"><button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Excluir</button><button id="cancel-delete-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button></div></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", projectId: "YOUR_PROJECT_ID" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-hardware-analyzer';
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId = null;
+        let cpuUnsubscribe = null, gpuUnsubscribe = null;
+        let itemToDelete = { id: null, type: null };
+
+        const state = { cpus: [], baseCpu: null, gpus: [], baseGpu: null };
+
+        const dom = {
+            authInfo: document.getElementById('auth-info'),
+            deleteModal: { modal: document.getElementById('delete-modal'), text: document.getElementById('delete-modal-text'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
+            tabs: { cpuBtn: document.getElementById('cpu-tab-btn'), gpuBtn: document.getElementById('gpu-tab-btn'), cpuContent: document.getElementById('cpu-analyzer'), gpuContent: document.getElementById('gpu-analyzer') },
+            cpu: {
+                form: document.getElementById('cpu-form'), idInput: document.getElementById('cpu-id'), nameInput: document.getElementById('cpu-name'), socketInput: document.getElementById('cpu-socket'), priceInput: document.getElementById('cpu-price'), performanceInput: document.getElementById('cpu-performance'), geminiError: document.getElementById('cpu-gemini-error'), fetchBtn: document.getElementById('fetch-cpu-data-btn'), spinner: document.getElementById('cpu-fetch-spinner'), table: document.getElementById('cpu-table'), tableBody: document.getElementById('cpu-table-body'), loading: document.getElementById('cpu-loading'), baseSelect: document.getElementById('cpu-base-select'), sortBy: document.getElementById('cpu-sort-by'), cancelBtn: document.getElementById('cpu-cancel-button'), formTitle: document.querySelector('#cpu-form-section h2'),
+                trendsBtn: document.getElementById('cpu-trends-btn'), trendsSpinner: document.getElementById('cpu-trends-spinner'), trendsList: document.getElementById('cpu-trends-list'), trendsError: document.getElementById('cpu-trends-error')
+            },
+            gpu: {
+                form: document.getElementById('gpu-form'), idInput: document.getElementById('gpu-id'), nameInput: document.getElementById('gpu-name'), priceInput: document.getElementById('gpu-price'), performanceInput: document.getElementById('gpu-performance'), geminiError: document.getElementById('gpu-gemini-error'), fetchBtn: document.getElementById('fetch-gpu-data-btn'), spinner: document.getElementById('gpu-fetch-spinner'), table: document.getElementById('gpu-table'), tableBody: document.getElementById('gpu-table-body'), loading: document.getElementById('gpu-loading'), baseSelect: document.getElementById('gpu-base-select'), sortBy: document.getElementById('gpu-sort-by'), cancelBtn: document.getElementById('gpu-cancel-button'), formTitle: document.querySelector('#gpu-form-section h2'),
+                trendsBtn: document.getElementById('gpu-trends-btn'), trendsSpinner: document.getElementById('gpu-trends-spinner'), trendsList: document.getElementById('gpu-trends-list'), trendsError: document.getElementById('gpu-trends-error')
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                dom.authInfo.textContent = `ID de Usuário: ${userId}`;
+                if (cpuUnsubscribe) cpuUnsubscribe();
+                if (gpuUnsubscribe) gpuUnsubscribe();
+                loadData('cpu');
+                loadData('gpu');
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) { console.error("Authentication Error:", error); }
+            }
+        });
+
+        async function loadData(type) {
+            if (!userId) return;
+            const collectionName = type === 'cpu' ? 'processors' : 'gpus';
+            const elements = dom[type];
+            elements.loading.classList.remove('hidden');
+            elements.table.classList.add('hidden');
+            const collectionPath = `artifacts/${appId}/users/${userId}/${collectionName}`;
+            const metaDocRef = doc(db, `artifacts/${appId}/users/${userId}/${collectionName}_meta/initialData`);
+            const docSnap = await getDoc(metaDocRef);
+            if (!docSnap.exists()) {
+                const initialData = type === 'cpu'
+                    ? [ { name: "Ryzen 5 5600", socket: "AM4", price: 790.00, performance: 21544 } ]
+                    : [ { name: "GeForce RTX 3060", price: 1800.00, performance: 17071 } ];
+                for (const item of initialData) { await addDoc(collection(db, collectionPath), item); }
+                await setDoc(metaDocRef, { added: true });
+            }
+            const unsubscribe = onSnapshot(collection(db, collectionPath), (snapshot) => {
+                state[type === 'cpu' ? 'cpus' : 'gpus'] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateUI(type);
+                elements.loading.classList.add('hidden');
+                elements.table.classList.remove('hidden');
+            }, (error) => {
+                console.error(`Firestore ${type.toUpperCase()} Error:`, error);
+                elements.loading.textContent = `Erro ao carregar ${type.toUpperCase()}s.`;
+            });
+            if (type === 'cpu') cpuUnsubscribe = unsubscribe;
+            else gpuUnsubscribe = unsubscribe;
+        }
+
+        function updateUI(type) {
+            const data = state[type === 'cpu' ? 'cpus' : 'gpus'];
+            const elements = dom[type];
+            let baseItem = state[type === 'cpu' ? 'baseCpu' : 'baseGpu'];
+            if (!baseItem && data.length > 0) {
+                 baseItem = data.reduce((min, p) => p.price < min.price ? p : min, data[0]);
+                 if(type === 'cpu') state.baseCpu = baseItem; else state.baseGpu = baseItem;
+            }
+            updateBaseSelect(type);
+            renderTable(type);
+        }
+
+        function renderTable(type) {
+            const elements = dom[type];
+            const data = state[type === 'cpu' ? 'cpus' : 'gpus'];
+            const baseItem = state[type === 'cpu' ? 'baseCpu' : 'baseGpu'];
+            elements.tableBody.innerHTML = '';
+            if (!baseItem) return;
+            const sortedData = sortData(data, elements.sortBy.value);
+            sortedData.forEach(item => {
+                const priceDiff = baseItem.price > 0 ? ((item.price - baseItem.price) / baseItem.price) * 100 : 0;
+                const perfDiff = baseItem.performance > 0 ? ((item.performance - baseItem.performance) / baseItem.performance) * 100 : 0;
+                const costBenefit = item.price > 0 ? (item.performance / item.price) : 0;
+                const priceDiffClass = priceDiff > 0 ? 'text-red-400' : 'text-green-400';
+                const perfDiffClass = perfDiff >= 0 ? 'text-green-400' : 'text-red-400';
+                const sign = (val) => val >= 0 ? '+' : '';
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
+                let rowHtml = `
+                    <td class="p-4 font-medium text-white">${item.name}</td>
+                    ${type === 'cpu' ? `<td class="p-4 text-gray-300">${item.socket}</td>` : ''}
+                    <td class="p-4 text-gray-300">R$ ${item.price.toFixed(2)}</td>
+                    <td class="p-4 ${perfDiffClass}">${sign(perfDiff)}${perfDiff.toFixed(1)}% <span class="text-xs text-gray-400">(${item.performance})</span></td>
+                    <td class="p-4 ${priceDiffClass}">${sign(priceDiff)}${priceDiff.toFixed(1)}%</td>
+                    <td class="p-4 text-gray-300">${costBenefit.toFixed(2)}</td>
+                    <td class="p-4 text-center">
+                        <button data-id="${item.id}" data-type="${type}" class="edit-btn text-blue-400 hover:text-blue-300 mx-2"><i class="fas fa-edit"></i></button>
+                        <button data-id="${item.id}" data-type="${type}" class="delete-btn text-red-400 hover:text-red-300 mx-2"><i class="fas fa-trash"></i></button>
+                    </td>`;
+                tr.innerHTML = rowHtml;
+                elements.tableBody.appendChild(tr);
+            });
+        }
+        
+        function updateBaseSelect(type) {
+            const elements = dom[type];
+            const data = state[type === 'cpu' ? 'cpus' : 'gpus'];
+            const baseItem = state[type === 'cpu' ? 'baseCpu' : 'baseGpu'];
+            const currentBaseId = baseItem ? baseItem.id : null;
+            elements.baseSelect.innerHTML = '';
+            [...data].sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name;
+                if (item.id === currentBaseId) { option.selected = true; }
+                elements.baseSelect.appendChild(option);
+            });
+        }
+
+        function sortData(data, sortBy) {
+            return [...data].sort((a, b) => {
+                const cbA = a.price > 0 ? a.performance / a.price : 0;
+                const cbB = b.price > 0 ? b.performance / b.price : 0;
+                switch (sortBy) {
+                    case 'price_asc': return a.price - b.price;
+                    case 'price_desc': return b.price - a.price;
+                    case 'perf_asc': return a.performance - b.performance;
+                    case 'perf_desc': return b.performance - a.performance;
+                    case 'cost_benefit_asc': return cbA - cbB;
+                    case 'cost_benefit_desc': return cbB - cbA;
+                    default: return 0;
+                }
+            });
+        }
+
+        function resetForm(type) {
+            const elements = dom[type];
+            elements.form.reset();
+            elements.idInput.value = '';
+            elements.formTitle.textContent = `Adicionar/Editar ${type.toUpperCase()}`;
+            elements.cancelBtn.classList.add('hidden');
+            elements.geminiError.classList.add('hidden');
+        }
+
+        async function handleFormSubmit(e, type) {
+            e.preventDefault();
+            const elements = dom[type];
+            const collectionName = type === 'cpu' ? 'processors' : 'gpus';
+            const id = elements.idInput.value;
+            let itemData;
+            if (type === 'cpu') {
+                itemData = { name: elements.nameInput.value.trim(), socket: elements.socketInput.value.trim(), price: parseFloat(elements.priceInput.value), performance: parseInt(elements.performanceInput.value) };
+            } else {
+                itemData = { name: elements.nameInput.value.trim(), price: parseFloat(elements.priceInput.value), performance: parseInt(elements.performanceInput.value) };
+            }
+            if (!itemData.name || isNaN(itemData.price) || isNaN(itemData.performance) || (type === 'cpu' && !itemData.socket)) {
+                alert('Por favor, preencha todos os campos corretamente.'); return;
+            }
+            const collectionPath = `artifacts/${appId}/users/${userId}/${collectionName}`;
+            try {
+                if (id) { await updateDoc(doc(db, collectionPath, id), itemData); } 
+                else { await addDoc(collection(db, collectionPath), itemData); }
+                resetForm(type);
+            } catch (error) { console.error(`Firestore Save ${type.toUpperCase()} Error:`, error); alert("Ocorreu um erro ao salvar."); }
+        }
+
+        function handleEditClick(target) {
+            const id = target.dataset.id;
+            const type = target.dataset.type;
+            const elements = dom[type];
+            const data = state[type === 'cpu' ? 'cpus' : 'gpus'];
+            const item = data.find(i => i.id === id);
+            if (item) {
+                elements.idInput.value = item.id;
+                elements.nameInput.value = item.name;
+                elements.priceInput.value = item.price;
+                elements.performanceInput.value = item.performance;
+                if (type === 'cpu') { elements.socketInput.value = item.socket; }
+                elements.formTitle.textContent = `Editar ${type.toUpperCase()}`;
+                elements.cancelBtn.classList.remove('hidden');
+                elements.form.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function handleDeleteClick(target) {
+            itemToDelete.id = target.dataset.id;
+            itemToDelete.type = target.dataset.type;
+            dom.deleteModal.text.textContent = `Tem certeza que deseja excluir este ${itemToDelete.type.toUpperCase()}?`;
+            dom.deleteModal.modal.classList.remove('hidden');
+        }
+
+        async function confirmDelete() {
+            if (itemToDelete.id && itemToDelete.type) {
+                const collectionName = itemToDelete.type === 'cpu' ? 'processors' : 'gpus';
+                const collectionPath = `artifacts/${appId}/users/${userId}/${collectionName}`;
+                try {
+                    await deleteDoc(doc(db, collectionPath, itemToDelete.id));
+                } catch (error) {
+                    console.error(`Firestore Delete Error:`, error);
+                    alert("Ocorreu um erro ao excluir.");
+                } finally {
+                    dom.deleteModal.modal.classList.add('hidden');
+                    itemToDelete = { id: null, type: null };
+                }
+            }
+        }
+
+        async function fetchGeminiData(type) {
+            const elements = dom[type];
+            const name = elements.nameInput.value.trim();
+            if (!name) {
+                elements.geminiError.textContent = `Por favor, insira o nome do ${type.toUpperCase()} primeiro.`;
+                elements.geminiError.classList.remove('hidden');
+                return;
+            }
+            elements.spinner.style.display = 'inline-block';
+            elements.fetchBtn.disabled = true;
+            elements.geminiError.classList.add('hidden');
+            let prompt, generationConfig;
+            if (type === 'cpu') {
+                prompt = `Para o processador "${name}", forneça o soquete da CPU e a pontuação no benchmark PassMark CPU Mark. Responda com um objeto JSON que tenha as chaves "socket" (string) e "performance" (número).`;
+                generationConfig = { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { socket: { type: "STRING" }, performance: { type: "NUMBER" } }, required: ["socket", "performance"] }};
+            } else {
+                prompt = `Para a placa de vídeo "${name}", forneça a pontuação no benchmark PassMark G3D Mark. Responda com um objeto JSON que tenha a chave "performance" (número).`;
+                generationConfig = { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { performance: { type: "NUMBER" } }, required: ["performance"] }};
+            }
+            try {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                if (result.candidates && result.candidates[0].content.parts.length > 0) {
+                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    elements.performanceInput.value = data.performance;
+                    if (type === 'cpu') { elements.socketInput.value = data.socket; }
+                } else { throw new Error("Resposta da API inválida."); }
+            } catch (error) {
+                console.error(`Gemini API ${type.toUpperCase()} Error:`, error);
+                elements.geminiError.textContent = `Erro ao buscar dados: ${error.message}`;
+                elements.geminiError.classList.remove('hidden');
+            } finally {
+                elements.spinner.style.display = 'none';
+                elements.fetchBtn.disabled = false;
+            }
+        }
+        
+        async function fetchTrends(type) {
+            const elements = dom[type];
+            elements.trendsSpinner.style.display = 'block';
+            elements.trendsBtn.disabled = true;
+            elements.trendsError.classList.add('hidden');
+            elements.trendsList.innerHTML = '';
+
+            const hardwareType = type === 'cpu' ? 'processadores (CPUs)' : 'placas de vídeo (GPUs)';
+            const prompt = `Liste os 10 ${hardwareType} mais populares e procurados no mercado brasileiro nesta semana. Ordene por popularidade. Responda com um objeto JSON que tenha uma chave "trends", contendo um array de strings com os nomes exatos dos produtos.`;
+            const generationConfig = { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { trends: { type: "ARRAY", items: { type: "STRING" } } }, required: ["trends"] } };
+            
+            try {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                if (result.candidates && result.candidates[0].content.parts.length > 0) {
+                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    renderTrends(type, data.trends);
+                } else { throw new Error("Resposta de tendências inválida."); }
+            } catch (error) {
+                console.error(`Gemini Trends ${type.toUpperCase()} Error:`, error);
+                elements.trendsError.textContent = `Erro ao buscar tendências: ${error.message}`;
+                elements.trendsError.classList.remove('hidden');
+            } finally {
+                elements.trendsSpinner.style.display = 'none';
+                elements.trendsBtn.disabled = false;
+            }
+        }
+        
+        function renderTrends(type, trends) {
+            const elements = dom[type];
+            elements.trendsList.innerHTML = '';
+            if (!trends || trends.length === 0) {
+                elements.trendsList.innerHTML = '<li>Nenhuma tendência encontrada.</li>';
+                return;
+            }
+            trends.forEach(itemName => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="flex-grow">${itemName}</span>
+                    <button data-name="${itemName}" class="analyze-trend-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-3 rounded-lg text-sm ml-4">Analisar</button>
+                `;
+                elements.trendsList.appendChild(li);
+            });
+        }
+        
+        function handleTrendClick(e, type) {
+            const target = e.target.closest('.analyze-trend-btn');
+            if (!target) return;
+            
+            const itemName = target.dataset.name;
+            const elements = dom[type];
+            
+            elements.nameInput.value = itemName;
+            elements.form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            elements.fetchBtn.click();
+        }
+
+        // --- EVENT LISTENERS ---
+        dom.tabs.cpuBtn.addEventListener('click', () => {
+            dom.tabs.cpuBtn.classList.add('active'); dom.tabs.gpuBtn.classList.remove('active');
+            dom.tabs.cpuContent.classList.remove('hidden'); dom.tabs.gpuContent.classList.add('hidden');
+        });
+        dom.tabs.gpuBtn.addEventListener('click', () => {
+            dom.tabs.gpuBtn.classList.add('active'); dom.tabs.cpuBtn.classList.remove('active');
+            dom.tabs.gpuContent.classList.remove('hidden'); dom.tabs.cpuContent.classList.add('hidden');
+        });
+
+        // CPU Listeners
+        dom.cpu.form.addEventListener('submit', (e) => handleFormSubmit(e, 'cpu'));
+        dom.cpu.cancelBtn.addEventListener('click', () => resetForm('cpu'));
+        dom.cpu.fetchBtn.addEventListener('click', () => fetchGeminiData('cpu'));
+        dom.cpu.baseSelect.addEventListener('change', (e) => { state.baseCpu = state.cpus.find(cpu => cpu.id === e.target.value); renderTable('cpu'); });
+        dom.cpu.sortBy.addEventListener('change', () => renderTable('cpu'));
+        dom.cpu.tableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            if (target.classList.contains('edit-btn')) handleEditClick(target);
+            if (target.classList.contains('delete-btn')) handleDeleteClick(target);
+        });
+        dom.cpu.trendsBtn.addEventListener('click', () => fetchTrends('cpu'));
+        dom.cpu.trendsList.addEventListener('click', (e) => handleTrendClick(e, 'cpu'));
+
+        // GPU Listeners
+        dom.gpu.form.addEventListener('submit', (e) => handleFormSubmit(e, 'gpu'));
+        dom.gpu.cancelBtn.addEventListener('click', () => resetForm('gpu'));
+        dom.gpu.fetchBtn.addEventListener('click', () => fetchGeminiData('gpu'));
+        dom.gpu.baseSelect.addEventListener('change', (e) => { state.baseGpu = state.gpus.find(gpu => gpu.id === e.target.value); renderTable('gpu'); });
+        dom.gpu.sortBy.addEventListener('change', () => renderTable('gpu'));
+        dom.gpu.tableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            if (target.classList.contains('edit-btn')) handleEditClick(target);
+            if (target.classList.contains('delete-btn')) handleDeleteClick(target);
+        });
+        dom.gpu.trendsBtn.addEventListener('click', () => fetchTrends('gpu'));
+        dom.gpu.trendsList.addEventListener('click', (e) => handleTrendClick(e, 'gpu'));
+
+        // Modal Listeners
+        dom.deleteModal.cancelBtn.addEventListener('click', () => dom.deleteModal.modal.classList.add('hidden'));
+        dom.deleteModal.confirmBtn.addEventListener('click', confirmDelete);
+
+    </script>
+</body>
+</html>
